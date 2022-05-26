@@ -16,10 +16,24 @@ type Tasks struct {
 	CompleteDate string `json:"completeDate"`
 }
 
-func New() *[]Tasks {
+func Create() *[]Tasks {
 	sl := make([]Tasks, 0)
 	return &sl
 }
+
+func separators() {
+	fmt.Println("---------------------------------")
+}
+
+func timeParser(strDate string) time.Time {
+	date, err := time.Parse("02-01-2006 15:04", strDate)
+	if err != nil {
+		panic(err)
+	}
+	return date
+}
+
+//------------ CHANGES -----------------
 
 func Add(sl *[]Tasks, title, desc, dLine string, done bool, compDate string) {
 	t := Tasks{title, desc, dLine, done, compDate}
@@ -37,6 +51,8 @@ func Delete(sl *[]Tasks, title string) {
 	*sl = st
 }
 
+//------------ SHOWS -----------------
+
 func ShowAll(sl *[]Tasks) {
 	st := *sl
 	var mark string
@@ -47,6 +63,7 @@ func ShowAll(sl *[]Tasks) {
 			mark = " "
 		}
 		fmt.Printf("%d. [%s]%s %s    %s\n%s\n", i+1, mark, val.CompleteDate, val.Title, val.Deadline, val.Description)
+		separators()
 	}
 }
 
@@ -54,29 +71,15 @@ func ShowUncompleted(sl *[]Tasks) {
 	st := *sl
 	now := time.Now()
 	for _, val := range st {
-		if val.Complete == true {
+		dLine := timeParser(val.Deadline)
+		if val.Complete == true || dLine.Before(now) {
 			Delete(&st, val.Title)
-		} else {
-			dLine, err := time.Parse("02-01-2006 15:04", val.Deadline)
-			if err != nil {
-				panic(err)
-			}
-			if dLine.Before(now) {
-				Delete(&st, val.Title)
-			}
 		}
 	}
 
-	current, err := time.Parse("02-01-2006 15:04", st[0].Deadline)
-	if err != nil {
-		panic(err)
-	}
+	current := timeParser(st[0].Deadline)
 	for i, val := range st {
-		dLine, err1 := time.Parse("02-01-2006 15:04", val.Deadline)
-		if err1 != nil {
-			panic(err1)
-		}
-
+		dLine := timeParser(val.Deadline)
 		if dLine.Before(current) {
 			st[i], st[0] = st[0], st[i]
 			current = dLine
@@ -85,8 +88,23 @@ func ShowUncompleted(sl *[]Tasks) {
 
 	for _, val := range st {
 		fmt.Printf(" %s    %s\n%s\n", val.Title, val.Deadline, val.Description)
+		separators()
 	}
 }
+
+func ShowOverdue(sl *[]Tasks) {
+	st := *sl
+	now := time.Now()
+	for _, val := range st {
+		dLine := timeParser(val.Deadline)
+		if val.Complete == false && dLine.Before(now) {
+			fmt.Printf(" %s    %s\n%s\n", val.Title, val.Deadline, val.Description)
+			separators()
+		}
+	}
+}
+
+//------------ DB CONTROL -----------------
 
 func Load(sl *[]Tasks) {
 	file, openErr := os.Open("db.json")

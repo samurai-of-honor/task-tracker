@@ -1,13 +1,14 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"os"
 )
 
 func Menu(sl *[]Tasks) {
 	var n int
-	for {
-		fmt.Print(`Enter options number:
+	fmt.Print(`Options:
   1 Show uncompleted tasks
   2 Show all tasks
   3 Mark the task completed
@@ -16,12 +17,15 @@ func Menu(sl *[]Tasks) {
   6 Show overdue tasks
   7 Delete task
   8 Save changes
+  0 Exit
 `)
-
+	r := bufio.NewReader(os.Stdin)
+	for {
+		fmt.Print("Enter options number: ")
 		fmt.Scanln(&n)
 		switch n {
 		case 1:
-			// ShowUncompleted()
+			ShowUncompleted(sl)
 		case 2:
 			ShowAll(sl)
 		case 3:
@@ -33,24 +37,23 @@ func Menu(sl *[]Tasks) {
 		case 6:
 			// ShowOverdue()
 		case 7:
-			// Delete()
+			fmt.Print("Enter task title for delete: ")
+			title, _, err := r.ReadLine()
+			if err != nil {
+				panic(err)
+			}
+			Delete(sl, string(title))
 		case 8:
 			Save(sl)
+		case 0:
+			os.Exit(0)
 		}
 	}
 }
 
 func main() {
 	sl := New()
-	Add(sl, "1", "test1", "26.05.2022 21:00", false, "-")
-	Add(sl, "2", "test2", "26.05.2022 22:00", true, "-")
+	Load(sl)
+	// Add(sl, "1", "test1", "02-01-2006 15:04", false, "-")
 	Menu(sl)
-
-	/*
-		dLine, err := time.Parse("02-01-2006 15:04", inDeadline)
-		if err != nil {
-			panic(err)
-		}
-		deadline := dLine.Format("02-01-2006 15:04")
-	*/
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"time"
 )
 
 type Tasks struct {
@@ -45,8 +46,65 @@ func ShowAll(sl *[]Tasks) {
 		} else {
 			mark = " "
 		}
-		fmt.Printf("%d. [%s] %s    %s\n%s\n", i+1, mark, val.Title, val.Deadline, val.Description)
+		fmt.Printf("%d. [%s]%s %s    %s\n%s\n", i+1, mark, val.CompleteDate, val.Title, val.Deadline, val.Description)
 	}
+}
+
+func ShowUncompleted(sl *[]Tasks) {
+	st := *sl
+	now := time.Now()
+	for _, val := range st {
+		if val.Complete == true {
+			Delete(&st, val.Title)
+		} else {
+			dLine, err := time.Parse("02-01-2006 15:04", val.Deadline)
+			if err != nil {
+				panic(err)
+			}
+			if dLine.Before(now) {
+				Delete(&st, val.Title)
+			}
+		}
+	}
+
+	current, err := time.Parse("02-01-2006 15:04", st[0].Deadline)
+	if err != nil {
+		panic(err)
+	}
+	for i, val := range st {
+		dLine, err1 := time.Parse("02-01-2006 15:04", val.Deadline)
+		if err1 != nil {
+			panic(err1)
+		}
+
+		if dLine.Before(current) {
+			st[i], st[0] = st[0], st[i]
+			current = dLine
+		}
+	}
+
+	for _, val := range st {
+		fmt.Printf(" %s    %s\n%s\n", val.Title, val.Deadline, val.Description)
+	}
+}
+
+func Load(sl *[]Tasks) {
+	file, openErr := os.Open("db.json")
+	if openErr != nil {
+		Save(sl)
+		return
+	}
+	defer file.Close()
+
+	data, err := io.ReadAll(file)
+	if err != nil {
+		panic(err)
+	}
+
+	if err := json.Unmarshal(data, sl); err != nil {
+		panic(err)
+	}
+
 }
 
 func Save(sl *[]Tasks) {
@@ -55,14 +113,14 @@ func Save(sl *[]Tasks) {
 		panic(convErr)
 	}
 
-	file, openErr := os.Create("db.json")
+	file, openErr := os.OpenFile("db.json", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0777)
 	if openErr != nil {
 		panic(openErr)
 	}
-	defer file.Close()
 
 	w := io.Writer(file)
 	if _, writeErr := w.Write(data); writeErr != nil {
 		panic(writeErr)
 	}
+	fmt.Println("Saved!")
 }

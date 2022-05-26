@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strings"
 )
 
 func printMenu() {
@@ -43,9 +44,12 @@ func Menu(sl *[]Tasks) {
 			ShowAll(sl)
 		case 3:
 			fmt.Print("Enter task title for mark: ")
-			// Mark(sl, readArgs(r))
+			Mark(sl, readArgs(r))
 		case 4:
-			// Add()
+			fmt.Print("Enter task info in format:\ntitle/description/01-01-2022 13:00\n")
+			str := readArgs(r)
+			strSl := strings.Split(str, "/")
+			Add(sl, strSl[0], strSl[1], strSl[2])
 		case 5:
 			// Change()
 		case 6:

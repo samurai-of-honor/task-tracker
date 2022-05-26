@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -22,7 +23,7 @@ func Create() *[]Tasks {
 }
 
 func separators() {
-	fmt.Println("---------------------------------")
+	fmt.Println(strings.Repeat("-", 50))
 }
 
 func timeParser(strDate string) time.Time {
@@ -35,8 +36,8 @@ func timeParser(strDate string) time.Time {
 
 //------------ CHANGES -----------------
 
-func Add(sl *[]Tasks, title, desc, dLine string, done bool, compDate string) {
-	t := Tasks{title, desc, dLine, done, compDate}
+func Add(sl *[]Tasks, title, desc, dLine string) {
+	t := Tasks{title, desc, dLine, false, strings.Repeat("_", 16)}
 	*sl = append(*sl, t)
 }
 
@@ -51,6 +52,20 @@ func Delete(sl *[]Tasks, title string) {
 	*sl = st
 }
 
+func Mark(sl *[]Tasks, title string) {
+	var n int
+	now := time.Now().Format("02-01-2006 15:04")
+	st := *sl
+	for i, val := range st {
+		if val.Title == title {
+			n = i
+		}
+	}
+	st[n].Complete = true
+	st[n].CompleteDate = now
+	st = *sl
+}
+
 //------------ SHOWS -----------------
 
 func ShowAll(sl *[]Tasks) {
@@ -62,7 +77,7 @@ func ShowAll(sl *[]Tasks) {
 		} else {
 			mark = " "
 		}
-		fmt.Printf("%d. [%s]%s %s    %s\n%s\n", i+1, mark, val.CompleteDate, val.Title, val.Deadline, val.Description)
+		fmt.Printf("%d. %s  %s  [%s]%s\n%s\n", i+1, val.Deadline, val.Title, mark, val.CompleteDate, val.Description)
 		separators()
 	}
 }
@@ -87,7 +102,7 @@ func ShowUncompleted(sl *[]Tasks) {
 	}
 
 	for _, val := range st {
-		fmt.Printf(" %s    %s\n%s\n", val.Title, val.Deadline, val.Description)
+		fmt.Printf(" %s   %s\n%s\n", val.Deadline, val.Title, val.Description)
 		separators()
 	}
 }

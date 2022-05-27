@@ -1,4 +1,4 @@
-package main
+package control
 
 import (
 	"bufio"
@@ -22,12 +22,22 @@ func printMenu() {
 `)
 }
 
-func readArgs(r *bufio.Reader) string {
+func readStr(r *bufio.Reader) string {
 	str, _, err := r.ReadLine()
 	if err != nil {
 		panic(err)
 	}
 	return string(str)
+}
+
+func readArgs(r *bufio.Reader) []string {
+	str := readStr(r)
+	strSl := strings.Split(str, "/")
+	if len(strSl) != 3 {
+		fmt.Println("Input error!")
+		return nil
+	}
+	return strSl
 }
 
 func Menu(sl *[]Tasks) {
@@ -36,7 +46,11 @@ func Menu(sl *[]Tasks) {
 	r := bufio.NewReader(os.Stdin)
 	for {
 		fmt.Print("Enter options number: ")
-		fmt.Scanln(&n)
+		if _, err := fmt.Scanln(&n); err != nil {
+			panic(err)
+		}
+		separators()
+
 		switch n {
 		case 1:
 			ShowUncompleted(sl)
@@ -44,19 +58,28 @@ func Menu(sl *[]Tasks) {
 			ShowAll(sl)
 		case 3:
 			fmt.Print("Enter task title for mark: ")
-			Mark(sl, readArgs(r))
+			Mark(sl, readStr(r))
 		case 4:
 			fmt.Print("Enter task info in format:\ntitle/description/01-01-2022 13:00\n")
-			str := readArgs(r)
-			strSl := strings.Split(str, "/")
+			strSl := readArgs(r)
+			if strSl == nil {
+				break
+			}
 			Add(sl, strSl[0], strSl[1], strSl[2])
 		case 5:
-			// Change()
+			fmt.Print("Enter task title for change: ")
+			title := readStr(r)
+			fmt.Print("Enter changed info and skip unchanged:\nExample for title: new title//\n")
+			strSl := readArgs(r)
+			if strSl == nil {
+				break
+			}
+			Change(sl, title, strSl[0], strSl[1], strSl[2])
 		case 6:
 			ShowOverdue(sl)
 		case 7:
 			fmt.Print("Enter task title for delete: ")
-			Delete(sl, readArgs(r))
+			Delete(sl, readStr(r))
 		case 8:
 			Save(sl)
 		case 9:
@@ -65,11 +88,4 @@ func Menu(sl *[]Tasks) {
 			os.Exit(0)
 		}
 	}
-}
-
-func main() {
-	sl := Create()
-	Load(sl)
-	// Add(sl, "1", "test1", "02-01-2006 15:04", false, "-")
-	Menu(sl)
 }

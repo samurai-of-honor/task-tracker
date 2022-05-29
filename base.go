@@ -166,10 +166,10 @@ func (sl *SlTasks) ShowOverdue() {
 
 //------------ DB CONTROL -----------------
 
-func (sl *SlTasks) Load() {
-	file, openErr := os.Open("db.json")
+func (sl *SlTasks) Load(db string) {
+	file, openErr := os.Open(db)
 	if openErr != nil {
-		sl.Save()
+		sl.Save(db)
 		return
 	}
 	defer func(file *os.File) {
@@ -187,16 +187,15 @@ func (sl *SlTasks) Load() {
 	if err := json.Unmarshal(data, sl); err != nil {
 		panic(err)
 	}
-
 }
 
-func (sl *SlTasks) Save() {
+func (sl *SlTasks) Save(db string) {
 	data, convErr := json.MarshalIndent(sl, "", "  ")
 	if convErr != nil {
 		panic(convErr)
 	}
 
-	file, openErr := os.OpenFile("db.json", os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0777)
+	file, openErr := os.OpenFile(db, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0777)
 	if openErr != nil {
 		panic(openErr)
 	}

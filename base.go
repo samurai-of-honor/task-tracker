@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-type Tasks struct {
+type Task struct {
 	Title        string `json:"title"`
 	Description  string `json:"description"`
 	Deadline     string `json:"deadline"`
@@ -17,16 +17,18 @@ type Tasks struct {
 	CompleteDate string `json:"completeDate"`
 }
 
-func Create() *[]Tasks {
-	sl := make([]Tasks, 0)
-	return &sl
+type SlTasks []Task
+
+func Create() *SlTasks {
+	sl := new(SlTasks)
+	return sl
 }
 
 func separators() {
 	fmt.Println(strings.Repeat("-", 50))
 }
 
-func show(i int, val Tasks) {
+func show(i int, val Task) {
 	var mark string
 	if val.Complete == true {
 		mark = "X"
@@ -50,15 +52,15 @@ func timeParser(strDate string) (time.Time, error) {
 
 //------------ CHANGES -----------------
 
-func Add(sl *[]Tasks, title, desc, dLine string) {
+func (sl *SlTasks) Add(title, desc, dLine string) {
 	if _, err := timeParser(dLine); err != nil {
 		return
 	}
-	t := Tasks{title, desc, dLine, false, strings.Repeat("_", 16)}
+	t := Task{title, desc, dLine, false, strings.Repeat("_", 16)}
 	*sl = append(*sl, t)
 }
 
-func Delete(sl *[]Tasks, title string) {
+func (sl *SlTasks) Delete(title string) {
 	st := *sl
 	for i, val := range st {
 		if val.Title == title {
@@ -69,7 +71,7 @@ func Delete(sl *[]Tasks, title string) {
 	*sl = st
 }
 
-func Mark(sl *[]Tasks, title string) {
+func (sl *SlTasks) Mark(title string) {
 	st := *sl
 	now := time.Now().Format(timeLayout)
 
@@ -79,10 +81,10 @@ func Mark(sl *[]Tasks, title string) {
 			st[i].CompleteDate = now
 		}
 	}
-	st = *sl
+	*sl = st
 }
 
-func Change(sl *[]Tasks, title, newTitle, desc, dLine string) {
+func (sl *SlTasks) Change(title, newTitle, desc, dLine string) {
 	st := *sl
 	for i, val := range st {
 		if val.Title == title {
@@ -106,13 +108,13 @@ func Change(sl *[]Tasks, title, newTitle, desc, dLine string) {
 
 //------------ SHOWS -----------------
 
-func ShowAll(sl *[]Tasks) {
+func (sl *SlTasks) ShowAll() {
 	for i, val := range *sl {
 		show(i, val)
 	}
 }
 
-func ShowUncompleted(sl *[]Tasks) {
+func (sl *SlTasks) ShowUncompleted() {
 	st := *sl
 	now := time.Now()
 	for _, val := range st {
@@ -121,7 +123,7 @@ func ShowUncompleted(sl *[]Tasks) {
 			return
 		}
 		if val.Complete == true || dLine.Before(now) {
-			Delete(&st, val.Title)
+			st.Delete(val.Title)
 		}
 	}
 	if len(st) == 0 {
@@ -149,7 +151,7 @@ func ShowUncompleted(sl *[]Tasks) {
 	}
 }
 
-func ShowOverdue(sl *[]Tasks) {
+func (sl *SlTasks) ShowOverdue() {
 	now := time.Now()
 	for i, val := range *sl {
 		dLine, err := timeParser(val.Deadline)
@@ -164,10 +166,10 @@ func ShowOverdue(sl *[]Tasks) {
 
 //------------ DB CONTROL -----------------
 
-func Load(sl *[]Tasks) {
+func (sl *SlTasks) Load() {
 	file, openErr := os.Open("db.json")
 	if openErr != nil {
-		Save(sl)
+		sl.Save()
 		return
 	}
 	defer func(file *os.File) {
@@ -188,7 +190,7 @@ func Load(sl *[]Tasks) {
 
 }
 
-func Save(sl *[]Tasks) {
+func (sl *SlTasks) Save() {
 	data, convErr := json.MarshalIndent(sl, "", "  ")
 	if convErr != nil {
 		panic(convErr)

@@ -6,6 +6,6 @@ import (
 
 func main() {
 	sl := tm.Create()
-	tm.Load(sl)
+	sl.Load()
 	tm.Menu(sl)
 }

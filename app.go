@@ -41,7 +41,7 @@ func readArgs(r *bufio.Reader) []string {
 	return strSl
 }
 
-func Menu(sl *SlTasks) {
+func Menu(sl *SlTasks, db string) {
 	printMenu()
 	r := bufio.NewReader(os.Stdin)
 	for {
@@ -79,7 +79,7 @@ func Menu(sl *SlTasks) {
 			fmt.Print("Enter task title for delete: ")
 			sl.Delete(readStr(r))
 		case "8":
-			sl.Save()
+			sl.Save(db)
 		case "9":
 			printMenu()
 		case "0":

@@ -25,7 +25,8 @@ func printMenu() {
 func readStr(r *bufio.Reader) string {
 	str, _, err := r.ReadLine()
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
+		return ""
 	}
 	return string(str)
 }
@@ -41,32 +42,29 @@ func readArgs(r *bufio.Reader) []string {
 }
 
 func Menu(sl *[]Tasks) {
-	var n int
 	printMenu()
 	r := bufio.NewReader(os.Stdin)
 	for {
 		fmt.Print("Enter options number: ")
-		if _, err := fmt.Scanln(&n); err != nil {
-			panic(err)
-		}
+		n := readStr(r)
 		separators()
 
 		switch n {
-		case 1:
+		case "1":
 			ShowUncompleted(sl)
-		case 2:
+		case "2":
 			ShowAll(sl)
-		case 3:
+		case "3":
 			fmt.Print("Enter task title for mark: ")
 			Mark(sl, readStr(r))
-		case 4:
+		case "4":
 			fmt.Print("Enter task info in format:\ntitle/description/01-01-2022 13:00\n")
 			strSl := readArgs(r)
 			if strSl == nil {
 				break
 			}
 			Add(sl, strSl[0], strSl[1], strSl[2])
-		case 5:
+		case "5":
 			fmt.Print("Enter task title for change: ")
 			title := readStr(r)
 			fmt.Print("Enter changed info and skip unchanged:\nExample for title: new title//\n")
@@ -75,16 +73,16 @@ func Menu(sl *[]Tasks) {
 				break
 			}
 			Change(sl, title, strSl[0], strSl[1], strSl[2])
-		case 6:
+		case "6":
 			ShowOverdue(sl)
-		case 7:
+		case "7":
 			fmt.Print("Enter task title for delete: ")
 			Delete(sl, readStr(r))
-		case 8:
+		case "8":
 			Save(sl)
-		case 9:
+		case "9":
 			printMenu()
-		case 0:
+		case "0":
 			os.Exit(0)
 		}
 	}

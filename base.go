@@ -26,18 +26,34 @@ func separators() {
 	fmt.Println(strings.Repeat("-", 50))
 }
 
-func timeParser(strDate string) time.Time {
-	date, err := time.Parse("02-01-2006 15:04", strDate)
-	if err != nil {
-		panic(err)
+func show(i int, val Tasks) {
+	var mark string
+	if val.Complete == true {
+		mark = "X"
+	} else {
+		mark = " "
 	}
-	return date
+	fmt.Printf("%d. %s  %s  [%s] %s\n%s\n", i+1, val.Deadline, val.Title, mark, val.CompleteDate, val.Description)
+	separators()
+}
+
+var timeLayout = "02-01-2006 15:04"
+
+func timeParser(strDate string) (time.Time, error) {
+	date, err := time.Parse(timeLayout, strDate)
+	if err != nil {
+		fmt.Println("Time parse error!")
+		return date, err
+	}
+	return date, nil
 }
 
 //------------ CHANGES -----------------
 
 func Add(sl *[]Tasks, title, desc, dLine string) {
-	timeParser(dLine)
+	if _, err := timeParser(dLine); err != nil {
+		return
+	}
 	t := Tasks{title, desc, dLine, false, strings.Repeat("_", 16)}
 	*sl = append(*sl, t)
 }
@@ -55,7 +71,7 @@ func Delete(sl *[]Tasks, title string) {
 
 func Mark(sl *[]Tasks, title string) {
 	st := *sl
-	now := time.Now().Format("02-01-2006 15:04")
+	now := time.Now().Format(timeLayout)
 
 	for i, val := range st {
 		if val.Title == title {
@@ -77,8 +93,11 @@ func Change(sl *[]Tasks, title, newTitle, desc, dLine string) {
 				st[i].Description = desc
 			}
 			if dLine != "" {
-				deadline := timeParser(dLine).Format("02-01-2006 15:04")
-				st[i].Deadline = deadline
+				deadline, err := timeParser(dLine)
+				if err != nil {
+					return
+				}
+				st[i].Deadline = deadline.Format(timeLayout)
 			}
 		}
 	}
@@ -88,15 +107,8 @@ func Change(sl *[]Tasks, title, newTitle, desc, dLine string) {
 //------------ SHOWS -----------------
 
 func ShowAll(sl *[]Tasks) {
-	var mark string
 	for i, val := range *sl {
-		if val.Complete == true {
-			mark = "X"
-		} else {
-			mark = " "
-		}
-		fmt.Printf("%d. %s  %s  [%s] %s\n%s\n", i+1, val.Deadline, val.Title, mark, val.CompleteDate, val.Description)
-		separators()
+		show(i, val)
 	}
 }
 
@@ -104,7 +116,10 @@ func ShowUncompleted(sl *[]Tasks) {
 	st := *sl
 	now := time.Now()
 	for _, val := range st {
-		dLine := timeParser(val.Deadline)
+		dLine, err := timeParser(val.Deadline)
+		if err != nil {
+			return
+		}
 		if val.Complete == true || dLine.Before(now) {
 			Delete(&st, val.Title)
 		}
@@ -115,27 +130,34 @@ func ShowUncompleted(sl *[]Tasks) {
 
 	for i := 0; i < len(st)-1; i++ {
 		for j := 0; j < len(st)-i-1; j++ {
-			curDLine := timeParser(st[j].Deadline)
-			nextDLine := timeParser(st[j+1].Deadline)
+			curDLine, err1 := timeParser(st[j].Deadline)
+			if err1 != nil {
+				return
+			}
+			nextDLine, err2 := timeParser(st[j+1].Deadline)
+			if err2 != nil {
+				return
+			}
 			if curDLine.After(nextDLine) {
 				st[j], st[j+1] = st[j+1], st[j]
 			}
 		}
 	}
 
-	for _, val := range st {
-		fmt.Printf(" %s   %s\n%s\n", val.Deadline, val.Title, val.Description)
-		separators()
+	for i, val := range st {
+		show(i, val)
 	}
 }
 
 func ShowOverdue(sl *[]Tasks) {
 	now := time.Now()
-	for _, val := range *sl {
-		dLine := timeParser(val.Deadline)
+	for i, val := range *sl {
+		dLine, err := timeParser(val.Deadline)
+		if err != nil {
+			return
+		}
 		if val.Complete == false && dLine.Before(now) {
-			fmt.Printf(" %s    %s\n%s\n", val.Title, val.Deadline, val.Description)
-			separators()
+			show(i, val)
 		}
 	}
 }
@@ -148,7 +170,9 @@ func Load(sl *[]Tasks) {
 		Save(sl)
 		return
 	}
-	defer file.Close()
+	defer func(file *os.File) {
+		_ = file.Close()
+	}(file)
 
 	data, err := io.ReadAll(file)
 	if len(data) == 0 {

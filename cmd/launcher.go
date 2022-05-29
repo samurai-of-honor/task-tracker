@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bufio"
 	"flag"
+	"os"
 	tm "task-manager"
 )
 
@@ -13,7 +15,13 @@ func main() {
 	if *dbFile != "" {
 		db = *dbFile
 	} else {
-		db = "db.json"
+		w := bufio.NewWriter(os.Stdout)
+		_, _ = w.WriteString("Enter database file or skip for default: ")
+		_ = w.Flush()
+		db = tm.ReadStr(bufio.NewReader(os.Stdin))
+		if db == "" {
+			db = "db.json"
+		}
 	}
 	sl := tm.Create()
 	sl.Load(db)

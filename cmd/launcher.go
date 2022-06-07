@@ -1,29 +1,35 @@
 package main
 
 import (
-	"bufio"
 	"flag"
-	"os"
 	tm "task-manager"
 )
 
-var dbFile = flag.String("f", "", "File with database or desired file name")
+var (
+	help   = flag.Bool("h", false, "Show help")
+	dbFile = flag.String("f", "db.json", "File with database or desired file name")
+
+	show            = flag.NewFlagSet("show", flag.PanicOnError)
+	showAll         = show.Bool("all", false, "Show all tasks")
+	showUncompleted = show.Bool("uncompleted", false, "Show uncompleted tasks")
+	showOverdue     = show.Bool("overdue", false, "Show overdue tasks")
+)
 
 func main() {
 	flag.Parse()
-	var db string
-	if *dbFile != "" {
-		db = *dbFile
-	} else {
-		w := bufio.NewWriter(os.Stdout)
-		_, _ = w.WriteString("Enter database file or skip for default: ")
-		_ = w.Flush()
-		db = tm.ReadStr(bufio.NewReader(os.Stdin))
-		if db == "" {
-			db = "db.json"
-		}
+	if *help {
+		flag.Usage()
+		show.Usage()
+		return
 	}
 	sl := tm.Create()
-	sl.Load(db)
-	tm.Menu(sl, db)
+	sl.Load(*dbFile)
+	switch {
+	case *showAll == true:
+		sl.ShowAll()
+	case *showUncompleted == true:
+		sl.ShowUncompleted()
+	case *showOverdue == true:
+		sl.ShowOverdue()
+	}
 }

@@ -49,12 +49,13 @@ func timeParser(strDate string) (time.Time, error) {
 
 //------------ CHANGES -----------------
 
-func (sl *SlTasks) Add(title, desc, dLine string) {
+func (sl *SlTasks) Add(title, desc, dLine string) error {
 	if _, err := timeParser(dLine); err != nil {
-		return
+		return fmt.Errorf("deadline error")
 	}
 	t := Task{title, desc, dLine, false, strings.Repeat("_", 16)}
 	*sl = append(*sl, t)
+	return nil
 }
 
 func (sl *SlTasks) Delete(title string) {
@@ -162,8 +163,10 @@ func (sl *SlTasks) ShowOverdue() string {
 
 //------------ DB CONTROL -----------------
 
-func (sl *SlTasks) Find(title string) Task {
+func (sl *SlTasks) Find(str string) Task {
 	for _, val := range *sl {
+		title0 := strings.TrimPrefix(str, "🔹 ")
+		title := strings.TrimPrefix(title0, "🔸 ")
 		if val.Title == title {
 			return val
 		}

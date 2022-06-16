@@ -6,44 +6,11 @@ import (
 	tm "task-manager"
 )
 
-var mainKeyboard = tg.NewReplyKeyboard(
-	tg.NewKeyboardButtonRow(
-		tg.NewKeyboardButton("Show tasks"),
-	),
-	tg.NewKeyboardButtonRow(
-		tg.NewKeyboardButton("Add task"),
-	),
-	tg.NewKeyboardButtonRow(
-		tg.NewKeyboardButton("Change tasks"),
-	),
-)
+var bot *tg.BotAPI
 
-var showKeyboard = tg.NewReplyKeyboard(
-	tg.NewKeyboardButtonRow(
-		tg.NewKeyboardButton("All"),
-		tg.NewKeyboardButton("Uncompleted"),
-		tg.NewKeyboardButton("Overdue"),
-	),
-	tg.NewKeyboardButtonRow(
-		tg.NewKeyboardButton("Return"),
-	),
-)
-
-var changeKeyboard = tg.NewReplyKeyboard(
-	tg.NewKeyboardButtonRow(
-		tg.NewKeyboardButton("Mark task"),
-	),
-	tg.NewKeyboardButtonRow(
-		tg.NewKeyboardButton("Change task"),
-		tg.NewKeyboardButton("Delete task"),
-	),
-	tg.NewKeyboardButtonRow(
-		tg.NewKeyboardButton("Return"),
-	),
-)
-
-func Auth() *tg.BotAPI {
-	bot, err := tg.NewBotAPI(token)
+func Auth() {
+	var err error
+	bot, err = tg.NewBotAPI(token)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -51,15 +18,30 @@ func Auth() *tg.BotAPI {
 	bot.Debug = true
 
 	log.Printf("Authorized on account %s", bot.Self.UserName)
-	return bot
+}
+
+func Send(msg tg.Chattable) {
+	if _, err := bot.Send(msg); err != nil {
+		log.Panic(err)
+	}
+}
+
+func GetText(updates tg.UpdatesChannel) string {
+	for update := range updates {
+		if update.Message == nil { // ignore any non-Message Updates
+			continue
+		}
+		return update.Message.Text
+	}
+	return "Unknown command😕"
 }
 
 func main() {
-	bot := Auth()
+	Auth()
 
 	sl := tm.Create()
 	sl.Load("db.json")
-	var current tm.Task
+	var curr tm.Task
 
 	u := tg.NewUpdate(0)
 	u.Timeout = 60
@@ -75,62 +57,113 @@ func main() {
 
 		switch update.Message.Text {
 		case "/start":
-			msg.Text = "Hi! Select action type:"
+			msg.Text = "Hi👋 Select action type:"
 			msg.ReplyMarkup = mainKeyboard
-		case "Return":
-			msg.Text = "Main menu:"
+		case "🔙 Return":
+			msg.Text = "🗄 Main menu:"
 			msg.ReplyMarkup = mainKeyboard
-		case "Show tasks":
-			msg.Text = "Select view mode:"
+		case "🖼 Show tasks":
+			msg.Text = "🔍 Select view mode:"
 			msg.ReplyMarkup = showKeyboard
-		case "All":
+		case "🗃 All":
 			msg.Text = sl.ShowAll()
 			msg.ReplyMarkup = showKeyboard
-		case "Uncompleted":
+		case "🛑 Uncompleted":
 			msg.Text = sl.ShowUncompleted()
 			msg.ReplyMarkup = showKeyboard
-		case "Overdue":
+		case "‼️Overdue":
 			msg.Text = sl.ShowOverdue()
 			msg.ReplyMarkup = showKeyboard
-		case "Change tasks":
-			msg.Text = "Select task:"
-			taskKeyboard := tg.ReplyKeyboardMarkup{ResizeKeyboard: true}
-			for _, v := range *sl {
-				taskKeyboard.Keyboard = append(taskKeyboard.Keyboard,
-					tg.NewKeyboardButtonRow(tg.NewKeyboardButton(v.Title)))
-			}
-			msg.ReplyMarkup = taskKeyboard
-		case "Mark task":
-			sl.Mark(current.Title)
-			msg.Text = current.Title + " completed!"
+		case "📌 Add task":
+			mainKeyboard.OneTimeKeyboard = true // Hide main keyboard for writing
+			msg.Text = "✏️ Enter title:"
+			Send(msg)
+			title := GetText(updates)
+			msg.Text = "📝 Enter description:"
+			Send(msg)
+			desc := GetText(updates)
+			msg.Text = "⏰ Enter deadline in this format \"01-01-2022 12:00\":"
+			Send(msg)
+			deadline := GetText(updates)
+
+			mainKeyboard.OneTimeKeyboard = false // Show main keyboard
 			msg.ReplyMarkup = mainKeyboard
-		case "Delete task":
-			sl.Delete(current.Title)
-			msg.Text = current.Title + " deleted!"
+			if err := sl.Add(title, desc, deadline); err != nil {
+				msg.Text = "Deadline error ❌"
+			} else {
+				msg.Text = title + " added ✅"
+				Send(msg)
+				continue
+			}
+		case "🛠 Change tasks":
+			msg.Text = "🗂 Select task:"
+
+			taskKeyboard := tg.ReplyKeyboardMarkup{ResizeKeyboard: true}
+			for i, v := range *sl {
+				if i%2 == 0 {
+					taskKeyboard.Keyboard = append(taskKeyboard.Keyboard,
+						tg.NewKeyboardButtonRow(tg.NewKeyboardButton("🔹 "+v.Title)))
+				} else {
+					taskKeyboard.Keyboard[i/2] = append(taskKeyboard.Keyboard[i/2],
+						tg.NewKeyboardButton("🔸 "+v.Title))
+				}
+			}
+			taskKeyboard.Keyboard = append(taskKeyboard.Keyboard,
+				tg.NewKeyboardButtonRow(tg.NewKeyboardButton("🔙 Return")))
+
+			msg.ReplyMarkup = taskKeyboard
+		case "✅ Mark task":
+			sl.Mark(curr.Title)
+			msg.Text = curr.Title + " completed ✅"
+			msg.ReplyMarkup = mainKeyboard
+		case "🔧 Change task":
+			msg.Text = "⚙️ Which option do you want to change?"
+			optionKeyboard.OneTimeKeyboard = true
+			msg.ReplyMarkup = optionKeyboard
+		case "✏️ Title":
+			msg.Text = "✏️ Enter new title:"
+			Send(msg)
+			title := GetText(updates)
+			sl.Change(curr.Title, title, curr.Description, curr.Deadline)
+			msg.Text = "Title changed ✅"
+			msg.ReplyMarkup = changeKeyboard
+		case "📝 Description":
+			msg.Text = "📝 Enter new description:"
+			Send(msg)
+			desc := GetText(updates)
+			sl.Change(curr.Title, curr.Title, desc, curr.Deadline)
+			msg.Text = "Description changed ✅"
+			msg.ReplyMarkup = changeKeyboard
+		case "⏰ Deadline":
+			msg.Text = "⏰ Enter new deadline:"
+			Send(msg)
+			deadline := GetText(updates)
+			sl.Change(curr.Title, curr.Title, curr.Description, deadline)
+			msg.Text = "Deadline changed ✅"
+			msg.ReplyMarkup = changeKeyboard
+		case "🗑 Delete task":
+			sl.Delete(curr.Title)
+			msg.Text = curr.Title + " deleted ✅"
 			msg.ReplyMarkup = mainKeyboard
 		default:
 			// Find search task by title
 			// It returns "undefined" if the task is not found
-			current = sl.Find(update.Message.Text)
+			curr = sl.Find(update.Message.Text)
 
-			if current.Title != "undefined" {
-				// Print current task
-				msg.Text = tm.Show(0, current)
-				if _, err := bot.Send(msg); err != nil {
-					log.Panic(err)
-				}
+			if curr.Title != "undefined" {
+				// Print curr task
+				msg.Text = tm.Show(0, curr)
+				Send(msg)
 
-				msg.Text = "Select action:"
+				msg.Text = "🎬 Select action:"
 				msg.ReplyMarkup = changeKeyboard
 			} else {
-				msg.Text = current.Title
+				msg.Text = curr.Title
 				msg.ReplyMarkup = mainKeyboard
 			}
 		}
 
 		sl.Save("db.json")
-		if _, err := bot.Send(msg); err != nil {
-			log.Panic(err)
-		}
+		Send(msg)
 	}
 }

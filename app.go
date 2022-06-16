@@ -47,7 +47,6 @@ func Menu(sl *SlTasks, db string) {
 	for {
 		fmt.Print("Enter options number: ")
 		n := readStr(r)
-		separators()
 
 		switch n {
 		case "1":

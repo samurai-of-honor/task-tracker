@@ -24,19 +24,16 @@ func Create() *SlTasks {
 	return sl
 }
 
-func separators() {
-	fmt.Println(strings.Repeat("-", 50))
-}
-
-func show(i int, val Task) {
+func show(i int, val Task) string {
 	var mark string
 	if val.Complete == true {
 		mark = "X"
 	} else {
 		mark = " "
 	}
-	fmt.Printf("%d. %s  %s  [%s] %s\n%s\n", i+1, val.Deadline, val.Title, mark, val.CompleteDate, val.Description)
-	separators()
+	str := fmt.Sprintf("%d. %s  %s  [%s] %s\n%s\n\n", i+1, val.Deadline, val.Title,
+		mark, val.CompleteDate, val.Description)
+	return str
 }
 
 var timeLayout = "02-01-2006 15:04"
@@ -108,60 +105,59 @@ func (sl *SlTasks) Change(title, newTitle, desc, dLine string) {
 
 //------------ SHOWS -----------------
 
-func (sl *SlTasks) ShowAll() {
+func (sl *SlTasks) ShowAll() string {
+	var str string
 	for i, val := range *sl {
-		show(i, val)
+		str += show(i, val)
 	}
+	return str
 }
 
-func (sl *SlTasks) ShowUncompleted() {
+func (sl *SlTasks) ShowUncompleted() string {
 	st := *sl
 	now := time.Now()
 	for _, val := range st {
-		dLine, err := timeParser(val.Deadline)
-		if err != nil {
-			return
-		}
+		dLine, _ := timeParser(val.Deadline)
+
 		if val.Complete == true || dLine.Before(now) {
 			st.Delete(val.Title)
 		}
 	}
 	if len(st) == 0 {
-		return
+		return "There's nothing"
 	}
 
 	for i := 0; i < len(st)-1; i++ {
 		for j := 0; j < len(st)-i-1; j++ {
-			curDLine, err1 := timeParser(st[j].Deadline)
-			if err1 != nil {
-				return
-			}
-			nextDLine, err2 := timeParser(st[j+1].Deadline)
-			if err2 != nil {
-				return
-			}
+			curDLine, _ := timeParser(st[j].Deadline)
+			nextDLine, _ := timeParser(st[j+1].Deadline)
+
 			if curDLine.After(nextDLine) {
 				st[j], st[j+1] = st[j+1], st[j]
 			}
 		}
 	}
 
+	var str string
 	for i, val := range st {
-		show(i, val)
+		str += show(i, val)
 	}
+	return str
 }
 
-func (sl *SlTasks) ShowOverdue() {
+func (sl *SlTasks) ShowOverdue() string {
 	now := time.Now()
+	var str string
 	for i, val := range *sl {
-		dLine, err := timeParser(val.Deadline)
-		if err != nil {
-			return
-		}
+		dLine, _ := timeParser(val.Deadline)
 		if val.Complete == false && dLine.Before(now) {
-			show(i, val)
+			str += show(i, val)
 		}
 	}
+	if str == "" {
+		return "There's nothing"
+	}
+	return str
 }
 
 //------------ DB CONTROL -----------------

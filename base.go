@@ -162,6 +162,15 @@ func (sl *SlTasks) ShowOverdue() string {
 
 //------------ DB CONTROL -----------------
 
+func (sl *SlTasks) Find(title string) string {
+	for _, val := range *sl {
+		if val.Title == title {
+			return val.Title
+		}
+	}
+	return "undefined"
+}
+
 func (sl *SlTasks) Load(db string) {
 	file, openErr := os.Open(db)
 	if openErr != nil {

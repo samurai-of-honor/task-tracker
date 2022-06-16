@@ -8,8 +8,13 @@ import (
 
 var mainKeyboard = tg.NewReplyKeyboard(
 	tg.NewKeyboardButtonRow(
-		tg.NewKeyboardButton("Show"),
-		tg.NewKeyboardButton("Change"),
+		tg.NewKeyboardButton("Show tasks"),
+	),
+	tg.NewKeyboardButtonRow(
+		tg.NewKeyboardButton("Add task"),
+	),
+	tg.NewKeyboardButtonRow(
+		tg.NewKeyboardButton("Change tasks"),
 	),
 )
 
@@ -19,16 +24,21 @@ var showKeyboard = tg.NewReplyKeyboard(
 		tg.NewKeyboardButton("Uncompleted"),
 		tg.NewKeyboardButton("Overdue"),
 	),
+	tg.NewKeyboardButtonRow(
+		tg.NewKeyboardButton("Return"),
+	),
 )
 
 var changeKeyboard = tg.NewReplyKeyboard(
 	tg.NewKeyboardButtonRow(
 		tg.NewKeyboardButton("Mark task"),
-		tg.NewKeyboardButton("Add task"),
 	),
 	tg.NewKeyboardButtonRow(
 		tg.NewKeyboardButton("Change task"),
 		tg.NewKeyboardButton("Delete task"),
+	),
+	tg.NewKeyboardButtonRow(
+		tg.NewKeyboardButton("Return"),
 	),
 )
 
@@ -49,13 +59,13 @@ func main() {
 
 	sl := tm.Create()
 	sl.Load("db.json")
+	var current tm.Task
 
 	u := tg.NewUpdate(0)
 	u.Timeout = 60
 
 	updates := bot.GetUpdatesChan(u)
 
-	var curr string
 	for update := range updates {
 		if update.Message == nil { // ignore any non-Message Updates
 			continue
@@ -67,37 +77,53 @@ func main() {
 		case "/start":
 			msg.Text = "Hi! Select action type:"
 			msg.ReplyMarkup = mainKeyboard
-		case "Show":
+		case "Return":
+			msg.Text = "Main menu:"
+			msg.ReplyMarkup = mainKeyboard
+		case "Show tasks":
 			msg.Text = "Select view mode:"
 			msg.ReplyMarkup = showKeyboard
 		case "All":
 			msg.Text = sl.ShowAll()
-			msg.ReplyMarkup = mainKeyboard
+			msg.ReplyMarkup = showKeyboard
 		case "Uncompleted":
 			msg.Text = sl.ShowUncompleted()
-			msg.ReplyMarkup = mainKeyboard
+			msg.ReplyMarkup = showKeyboard
 		case "Overdue":
 			msg.Text = sl.ShowOverdue()
-			msg.ReplyMarkup = mainKeyboard
-		case "Change":
+			msg.ReplyMarkup = showKeyboard
+		case "Change tasks":
 			msg.Text = "Select task:"
-			taskKeyboard := tg.ReplyKeyboardMarkup{}
+			taskKeyboard := tg.ReplyKeyboardMarkup{ResizeKeyboard: true}
 			for _, v := range *sl {
 				taskKeyboard.Keyboard = append(taskKeyboard.Keyboard,
 					tg.NewKeyboardButtonRow(tg.NewKeyboardButton(v.Title)))
 			}
 			msg.ReplyMarkup = taskKeyboard
 		case "Mark task":
-			sl.Mark(curr)
-			msg.Text = curr + " completed!"
+			sl.Mark(current.Title)
+			msg.Text = current.Title + " completed!"
+			msg.ReplyMarkup = mainKeyboard
+		case "Delete task":
+			sl.Delete(current.Title)
+			msg.Text = current.Title + " deleted!"
 			msg.ReplyMarkup = mainKeyboard
 		default:
-			curr = sl.Find(update.Message.Text)
-			if curr != "undefined" {
+			// Find search task by title
+			// It returns "undefined" if the task is not found
+			current = sl.Find(update.Message.Text)
+
+			if current.Title != "undefined" {
+				// Print current task
+				msg.Text = tm.Show(0, current)
+				if _, err := bot.Send(msg); err != nil {
+					log.Panic(err)
+				}
+
 				msg.Text = "Select action:"
 				msg.ReplyMarkup = changeKeyboard
 			} else {
-				msg.Text = curr
+				msg.Text = current.Title
 				msg.ReplyMarkup = mainKeyboard
 			}
 		}

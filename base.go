@@ -24,7 +24,7 @@ func Create() *SlTasks {
 	return sl
 }
 
-func show(i int, val Task) string {
+func Show(i int, val Task) string {
 	var mark string
 	if val.Complete == true {
 		mark = "X"
@@ -108,7 +108,7 @@ func (sl *SlTasks) Change(title, newTitle, desc, dLine string) {
 func (sl *SlTasks) ShowAll() string {
 	var str string
 	for i, val := range *sl {
-		str += show(i, val)
+		str += Show(i, val)
 	}
 	return str
 }
@@ -140,7 +140,7 @@ func (sl *SlTasks) ShowUncompleted() string {
 
 	var str string
 	for i, val := range st {
-		str += show(i, val)
+		str += Show(i, val)
 	}
 	return str
 }
@@ -151,7 +151,7 @@ func (sl *SlTasks) ShowOverdue() string {
 	for i, val := range *sl {
 		dLine, _ := timeParser(val.Deadline)
 		if val.Complete == false && dLine.Before(now) {
-			str += show(i, val)
+			str += Show(i, val)
 		}
 	}
 	if str == "" {
@@ -162,13 +162,13 @@ func (sl *SlTasks) ShowOverdue() string {
 
 //------------ DB CONTROL -----------------
 
-func (sl *SlTasks) Find(title string) string {
+func (sl *SlTasks) Find(title string) Task {
 	for _, val := range *sl {
 		if val.Title == title {
-			return val.Title
+			return val
 		}
 	}
-	return "undefined"
+	return Task{Title: "undefined"}
 }
 
 func (sl *SlTasks) Load(db string) {

@@ -1,51 +1,56 @@
 package main
 
-import tg "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+import (
+	tg "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	. "task-manager/tg/localization"
+)
 
 var mainKeyboard = tg.NewReplyKeyboard(
 	tg.NewKeyboardButtonRow(
-		tg.NewKeyboardButton("🖼 Show tasks"),
+		tg.NewKeyboardButton(ShowTasks),
 	),
 	tg.NewKeyboardButtonRow(
-		tg.NewKeyboardButton("📌 Add task"),
+		tg.NewKeyboardButton(AddTask),
 	),
 	tg.NewKeyboardButtonRow(
-		tg.NewKeyboardButton("🛠 Change tasks"),
+		tg.NewKeyboardButton(ChangeTasks),
 	),
 )
 
 var showKeyboard = tg.NewReplyKeyboard(
 	tg.NewKeyboardButtonRow(
-		tg.NewKeyboardButton("🗃 All"),
-		tg.NewKeyboardButton("🛑 Uncompleted"),
-		tg.NewKeyboardButton("‼️Overdue"),
+		tg.NewKeyboardButton(UncompletedTasks),
 	),
 	tg.NewKeyboardButtonRow(
-		tg.NewKeyboardButton("🔙 Return"),
+		tg.NewKeyboardButton(AllTasks),
+		tg.NewKeyboardButton(OverdueTasks),
+	),
+	tg.NewKeyboardButtonRow(
+		tg.NewKeyboardButton(Return),
 	),
 )
 
 var changeKeyboard = tg.NewReplyKeyboard(
 	tg.NewKeyboardButtonRow(
-		tg.NewKeyboardButton("✅ Mark task"),
+		tg.NewKeyboardButton(MarkTask),
 	),
 	tg.NewKeyboardButtonRow(
-		tg.NewKeyboardButton("🔧 Change task"),
-		tg.NewKeyboardButton("🗑 Delete task"),
+		tg.NewKeyboardButton(ChangeTask),
+		tg.NewKeyboardButton(DeleteTask),
 	),
 	tg.NewKeyboardButtonRow(
-		tg.NewKeyboardButton("🔙 Return"),
+		tg.NewKeyboardButton(Return),
 	),
 )
 
 var optionKeyboard = tg.NewReplyKeyboard(
 	tg.NewKeyboardButtonRow(
-		tg.NewKeyboardButton("✏️ Title"),
+		tg.NewKeyboardButton(ChangeTitle),
 	),
 	tg.NewKeyboardButtonRow(
-		tg.NewKeyboardButton("📝 Description"),
+		tg.NewKeyboardButton(ChangeDesc),
 	),
 	tg.NewKeyboardButtonRow(
-		tg.NewKeyboardButton("⏰ Deadline"),
+		tg.NewKeyboardButton(ChangeDLIne),
 	),
 )

@@ -1,23 +1,32 @@
 package main
 
 import (
+	"flag"
 	tg "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"log"
+	"strconv"
 	tm "task-manager"
+	. "task-manager/tg/localization"
 )
 
+var token = flag.String("t", "", "Token for access bot")
 var bot *tg.BotAPI
 
 func Auth() {
 	var err error
-	bot, err = tg.NewBotAPI(token)
+	flag.Parse()
+	bot, err = tg.NewBotAPI(*token)
 	if err != nil {
 		log.Panic(err)
 	}
 
 	bot.Debug = true
-
 	log.Printf("Authorized on account %s", bot.Self.UserName)
+}
+
+func TaskFile(id int64) string {
+	sID := "./tg/taskBases/" + strconv.Itoa(int(id)) + ".json"
+	return sID
 }
 
 func Send(msg tg.Chattable) {
@@ -33,14 +42,12 @@ func GetText(updates tg.UpdatesChannel) string {
 		}
 		return update.Message.Text
 	}
-	return "Unknown command😕"
+	return UnknownCommand
 }
 
 func main() {
 	Auth()
 
-	sl := tm.Create()
-	sl.Load("db.json")
 	var curr tm.Task
 
 	u := tg.NewUpdate(0)
@@ -53,117 +60,140 @@ func main() {
 			continue
 		}
 
+		sl := tm.Create()
+		sl.Load(TaskFile(update.Message.Chat.ID))
+
 		msg := tg.NewMessage(update.Message.Chat.ID, "")
 
 		switch update.Message.Text {
 		case "/start":
-			msg.Text = "Hi👋 Select action type:"
+			msg.Text = StartText
 			msg.ReplyMarkup = mainKeyboard
-		case "🔙 Return":
-			msg.Text = "🗄 Main menu:"
+		case Return:
+			msg.Text = MainMenu
 			msg.ReplyMarkup = mainKeyboard
-		case "🖼 Show tasks":
-			msg.Text = "🔍 Select view mode:"
+		case ShowTasks:
+			msg.Text = ViewMode
 			msg.ReplyMarkup = showKeyboard
-		case "🗃 All":
-			msg.Text = sl.ShowAll()
+		case AllTasks:
+			text := sl.ShowAll()
+			if text == "" {
+				msg.Text = Nothing
+			} else {
+				msg.Text = text
+			}
 			msg.ReplyMarkup = showKeyboard
-		case "🛑 Uncompleted":
-			msg.Text = sl.ShowUncompleted()
+		case UncompletedTasks:
+			text := sl.ShowUncompleted()
+			if text == "" {
+				msg.Text = Nothing
+			} else {
+				msg.Text = text
+			}
 			msg.ReplyMarkup = showKeyboard
-		case "‼️Overdue":
-			msg.Text = sl.ShowOverdue()
+		case OverdueTasks:
+			text := sl.ShowOverdue()
+			if text == "" {
+				msg.Text = Nothing
+			} else {
+				msg.Text = text
+			}
 			msg.ReplyMarkup = showKeyboard
-		case "📌 Add task":
-			mainKeyboard.OneTimeKeyboard = true // Hide main keyboard for writing
-			msg.Text = "✏️ Enter title:"
+		case AddTask:
+			msg.Text = SelectTask
+			newTaskKeyboard := tg.ReplyKeyboardMarkup{OneTimeKeyboard: true}
+			newTaskKeyboard.Keyboard = append(newTaskKeyboard.Keyboard,
+				tg.NewKeyboardButtonRow(tg.NewKeyboardButton(NewTask)))
+			msg.ReplyMarkup = newTaskKeyboard
+		case NewTask:
+			msg.Text = InTitle
 			Send(msg)
 			title := GetText(updates)
-			msg.Text = "📝 Enter description:"
+			msg.Text = InDesc
 			Send(msg)
 			desc := GetText(updates)
-			msg.Text = "⏰ Enter deadline in this format \"01-01-2022 12:00\":"
+			msg.Text = InDLine
 			Send(msg)
 			deadline := GetText(updates)
 
-			mainKeyboard.OneTimeKeyboard = false // Show main keyboard
-			msg.ReplyMarkup = mainKeyboard
-			if err := sl.Add(title, desc, deadline); err != nil {
-				msg.Text = "Deadline error ❌"
+			err := sl.Add(title, desc, deadline)
+			if err == "deadline error" {
+				msg.Text = ErrDLine
+			} else if err == "title error" {
+				msg.Text = ErrTitle
 			} else {
-				msg.Text = title + " added ✅"
-				Send(msg)
-				continue
+				msg.Text = title + TaskAdded
 			}
-		case "🛠 Change tasks":
-			msg.Text = "🗂 Select task:"
+			msg.ReplyMarkup = mainKeyboard
+		case ChangeTasks:
+			msg.Text = SelectTask
 
-			taskKeyboard := tg.ReplyKeyboardMarkup{ResizeKeyboard: true}
+			tasksKeyboard := tg.ReplyKeyboardMarkup{ResizeKeyboard: true}
 			for i, v := range *sl {
 				if i%2 == 0 {
-					taskKeyboard.Keyboard = append(taskKeyboard.Keyboard,
-						tg.NewKeyboardButtonRow(tg.NewKeyboardButton("🔹 "+v.Title)))
+					tasksKeyboard.Keyboard = append(tasksKeyboard.Keyboard,
+						tg.NewKeyboardButtonRow(tg.NewKeyboardButton(BlueRhombus+v.Title)))
 				} else {
-					taskKeyboard.Keyboard[i/2] = append(taskKeyboard.Keyboard[i/2],
-						tg.NewKeyboardButton("🔸 "+v.Title))
+					tasksKeyboard.Keyboard[i/2] = append(tasksKeyboard.Keyboard[i/2],
+						tg.NewKeyboardButton(YellowRhombus+v.Title))
 				}
 			}
-			taskKeyboard.Keyboard = append(taskKeyboard.Keyboard,
-				tg.NewKeyboardButtonRow(tg.NewKeyboardButton("🔙 Return")))
+			tasksKeyboard.Keyboard = append(tasksKeyboard.Keyboard,
+				tg.NewKeyboardButtonRow(tg.NewKeyboardButton(Return)))
 
-			msg.ReplyMarkup = taskKeyboard
-		case "✅ Mark task":
+			msg.ReplyMarkup = tasksKeyboard
+		case MarkTask:
 			sl.Mark(curr.Title)
-			msg.Text = curr.Title + " completed ✅"
+			msg.Text = curr.Title + TaskCompleted
 			msg.ReplyMarkup = mainKeyboard
-		case "🔧 Change task":
-			msg.Text = "⚙️ Which option do you want to change?"
+		case ChangeTask:
+			msg.Text = TaskOptions
 			optionKeyboard.OneTimeKeyboard = true
 			msg.ReplyMarkup = optionKeyboard
-		case "✏️ Title":
-			msg.Text = "✏️ Enter new title:"
+		case ChangeTitle:
+			msg.Text = NewTitle
 			Send(msg)
 			title := GetText(updates)
 			sl.Change(curr.Title, title, curr.Description, curr.Deadline)
-			msg.Text = "Title changed ✅"
+			msg.Text = ChangeTitle + TaskChanged
 			msg.ReplyMarkup = changeKeyboard
-		case "📝 Description":
-			msg.Text = "📝 Enter new description:"
+		case ChangeDesc:
+			msg.Text = NewDesc
 			Send(msg)
 			desc := GetText(updates)
 			sl.Change(curr.Title, curr.Title, desc, curr.Deadline)
-			msg.Text = "Description changed ✅"
+			msg.Text = ChangeDesc + TaskChanged
 			msg.ReplyMarkup = changeKeyboard
-		case "⏰ Deadline":
-			msg.Text = "⏰ Enter new deadline:"
+		case ChangeDLIne:
+			msg.Text = NewDLine
 			Send(msg)
 			deadline := GetText(updates)
 			sl.Change(curr.Title, curr.Title, curr.Description, deadline)
-			msg.Text = "Deadline changed ✅"
+			msg.Text = ChangeDLIne + TaskChanged
 			msg.ReplyMarkup = changeKeyboard
-		case "🗑 Delete task":
+		case DeleteTask:
 			sl.Delete(curr.Title)
-			msg.Text = curr.Title + " deleted ✅"
+			msg.Text = curr.Title + TaskDeleted
 			msg.ReplyMarkup = mainKeyboard
 		default:
 			// Find search task by title
 			// It returns "undefined" if the task is not found
 			curr = sl.Find(update.Message.Text)
 
-			if curr.Title != "undefined" {
+			if curr.Title != "" {
 				// Print curr task
-				msg.Text = tm.Show(0, curr)
+				msg.Text = tm.Show(curr)
 				Send(msg)
 
-				msg.Text = "🎬 Select action:"
+				msg.Text = Actions
 				msg.ReplyMarkup = changeKeyboard
 			} else {
-				msg.Text = curr.Title
+				msg.Text = Nothing
 				msg.ReplyMarkup = mainKeyboard
 			}
 		}
 
-		sl.Save("db.json")
+		sl.Save(TaskFile(update.Message.Chat.ID))
 		Send(msg)
 	}
 }

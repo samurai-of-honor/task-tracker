@@ -24,19 +24,18 @@ func Create() *SlTasks {
 	return sl
 }
 
-func Show(i int, val Task) string {
-	var mark string
-	if val.Complete == true {
-		mark = "X"
-	} else {
-		mark = " "
+func (sl *SlTasks) Find(str string) Task {
+	for _, val := range *sl {
+		title0 := strings.TrimPrefix(str, "🔹 ")
+		title := strings.TrimPrefix(title0, "🔸 ")
+		if val.Title == title {
+			return val
+		}
 	}
-	str := fmt.Sprintf("%d. %s  %s  [%s] %s\n%s\n\n", i+1, val.Deadline, val.Title,
-		mark, val.CompleteDate, val.Description)
-	return str
+	return Task{Title: ""}
 }
 
-var timeLayout = "02-01-2006 15:04"
+var timeLayout = "02.01.2006"
 
 func timeParser(strDate string) (time.Time, error) {
 	date, err := time.Parse(timeLayout, strDate)
@@ -49,13 +48,18 @@ func timeParser(strDate string) (time.Time, error) {
 
 //------------ CHANGES -----------------
 
-func (sl *SlTasks) Add(title, desc, dLine string) error {
+func (sl *SlTasks) Add(title, desc, dLine string) string {
 	if _, err := timeParser(dLine); err != nil {
-		return fmt.Errorf("deadline error")
+		return "deadline error"
 	}
-	t := Task{title, desc, dLine, false, strings.Repeat("_", 16)}
+	for _, val := range *sl {
+		if val.Title == title {
+			return "title error"
+		}
+	}
+	t := Task{title, desc, dLine, false, strings.Repeat("_", 11)} // strings.Repeat("_", 16
 	*sl = append(*sl, t)
-	return nil
+	return ""
 }
 
 func (sl *SlTasks) Delete(title string) {
@@ -106,10 +110,22 @@ func (sl *SlTasks) Change(title, newTitle, desc, dLine string) {
 
 //------------ SHOWS -----------------
 
+func Show(val Task) string {
+	var mark string
+	if val.Complete == true {
+		mark = "\U0001F7E2"
+	} else {
+		mark = "🔴"
+	}
+	str := fmt.Sprintf("✏️ %s\n📝 %s\n⏰ %s\n%s %s\n\n", val.Title, val.Description, val.Deadline,
+		mark, val.CompleteDate)
+	return str
+}
+
 func (sl *SlTasks) ShowAll() string {
 	var str string
-	for i, val := range *sl {
-		str += Show(i, val)
+	for _, val := range *sl {
+		str += Show(val)
 	}
 	return str
 }
@@ -125,7 +141,7 @@ func (sl *SlTasks) ShowUncompleted() string {
 		}
 	}
 	if len(st) == 0 {
-		return "There's nothing"
+		return ""
 	}
 
 	for i := 0; i < len(st)-1; i++ {
@@ -140,8 +156,8 @@ func (sl *SlTasks) ShowUncompleted() string {
 	}
 
 	var str string
-	for i, val := range st {
-		str += Show(i, val)
+	for _, val := range st {
+		str += Show(val)
 	}
 	return str
 }
@@ -149,30 +165,16 @@ func (sl *SlTasks) ShowUncompleted() string {
 func (sl *SlTasks) ShowOverdue() string {
 	now := time.Now()
 	var str string
-	for i, val := range *sl {
+	for _, val := range *sl {
 		dLine, _ := timeParser(val.Deadline)
 		if val.Complete == false && dLine.Before(now) {
-			str += Show(i, val)
+			str += Show(val)
 		}
-	}
-	if str == "" {
-		return "There's nothing"
 	}
 	return str
 }
 
 //------------ DB CONTROL -----------------
-
-func (sl *SlTasks) Find(str string) Task {
-	for _, val := range *sl {
-		title0 := strings.TrimPrefix(str, "🔹 ")
-		title := strings.TrimPrefix(title0, "🔸 ")
-		if val.Title == title {
-			return val
-		}
-	}
-	return Task{Title: "undefined"}
-}
 
 func (sl *SlTasks) Load(db string) {
 	file, openErr := os.Open(db)

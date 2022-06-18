@@ -47,6 +47,7 @@ func GetText(updates tg.UpdatesChannel) string {
 
 func main() {
 	Auth()
+	go NotificationOn(true)
 
 	var curr tm.Task
 
@@ -188,7 +189,7 @@ func main() {
 				msg.Text = Actions
 				msg.ReplyMarkup = changeKeyboard
 			} else {
-				msg.Text = Nothing
+				msg.Text = UnknownCommand
 				msg.ReplyMarkup = mainKeyboard
 			}
 		}

@@ -18,7 +18,7 @@ var (
 
 	AddTask   = "📥 Додати задачу"
 	NewTask   = "📌 Сворити нову"
-	InTitle   = "✏️ Введи назву:"
+	InTitle   = "🏷 Введи назву:"
 	InDesc    = "📝 Введи опис задачі:"
 	InDLine   = "⏰ Введи дату дедлайну у форматі \"27.05.2022\":"
 	TaskAdded = " додано ✅"
@@ -32,8 +32,8 @@ var (
 
 	ChangeTask  = "🔧 Змінити задачу"
 	TaskOptions = "⚙️ Що саме ти хочеш змінити?"
-	ChangeTitle = "✏️ Назву"
-	NewTitle    = "✏️ Введи нову назву:"
+	ChangeTitle = "🏷 Назву"
+	NewTitle    = "🏷 Введи нову назву:"
 	ChangeDesc  = "📝 Опис"
 	NewDesc     = "📝 Введи новий опис:"
 	ChangeDLIne = "⏰ Дедлайн"
@@ -42,6 +42,8 @@ var (
 
 	DeleteTask  = "🗑 Видалити"
 	TaskDeleted = " видалено ✅"
+
+	DontForgetMsg = "🔥 Не забудь виконати задачі:"
 
 	ErrDLine = "Помилка при введені дедлайну ❌"
 	ErrTitle = "Задача з такою назвою вже існує ❌"

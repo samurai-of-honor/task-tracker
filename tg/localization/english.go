@@ -44,6 +44,8 @@ package localization
 	DeleteTask  = "🗑 Delete task"
 	TaskDeleted = " deleted ✅"
 
+	DontForgetMsg = "🔥 Don't forget to complete the tasks:"
+
 	ErrDLine = "Deadline error ❌"
 	ErrTitle = "Task with this title exist ❌"
 )

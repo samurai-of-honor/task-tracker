@@ -37,7 +37,7 @@ func (sl *SlTasks) Find(str string) Task {
 
 var timeLayout = "02.01.2006"
 
-func timeParser(strDate string) (time.Time, error) {
+func TimeParser(strDate string) (time.Time, error) {
 	date, err := time.Parse(timeLayout, strDate)
 	if err != nil {
 		fmt.Println("Time parse error!")
@@ -49,7 +49,7 @@ func timeParser(strDate string) (time.Time, error) {
 //------------ CHANGES -----------------
 
 func (sl *SlTasks) Add(title, desc, dLine string) string {
-	if _, err := timeParser(dLine); err != nil {
+	if _, err := TimeParser(dLine); err != nil {
 		return "deadline error"
 	}
 	for _, val := range *sl {
@@ -97,7 +97,7 @@ func (sl *SlTasks) Change(title, newTitle, desc, dLine string) {
 				st[i].Description = desc
 			}
 			if dLine != "" {
-				deadline, err := timeParser(dLine)
+				deadline, err := TimeParser(dLine)
 				if err != nil {
 					return
 				}
@@ -111,13 +111,23 @@ func (sl *SlTasks) Change(title, newTitle, desc, dLine string) {
 //------------ SHOWS -----------------
 
 func Show(val Task) string {
-	var mark string
+	var mark, titleSuffix string
 	if val.Complete == true {
 		mark = "\U0001F7E2"
 	} else {
 		mark = "🔴"
+
+		dLine, _ := TimeParser(val.Deadline)
+		// Calculate the number of hours until the deadline
+		dur := time.Until(dLine).Hours()
+		if dur > 0 && dur <= 24 {
+			titleSuffix = "🔥"
+		} else if dur <= 0 {
+			titleSuffix = "🚫"
+		}
 	}
-	str := fmt.Sprintf("✏️ %s\n📝 %s\n⏰ %s\n%s %s\n\n", val.Title, val.Description, val.Deadline,
+
+	str := fmt.Sprintf("🏷 %s %s\n📝 %s\n⏰ %s\n%s %s\n\n", val.Title, titleSuffix, val.Description, val.Deadline,
 		mark, val.CompleteDate)
 	return str
 }
@@ -134,7 +144,7 @@ func (sl *SlTasks) ShowUncompleted() string {
 	st := *sl
 	now := time.Now()
 	for _, val := range st {
-		dLine, _ := timeParser(val.Deadline)
+		dLine, _ := TimeParser(val.Deadline)
 
 		if val.Complete == true || dLine.Before(now) {
 			st.Delete(val.Title)
@@ -146,8 +156,8 @@ func (sl *SlTasks) ShowUncompleted() string {
 
 	for i := 0; i < len(st)-1; i++ {
 		for j := 0; j < len(st)-i-1; j++ {
-			curDLine, _ := timeParser(st[j].Deadline)
-			nextDLine, _ := timeParser(st[j+1].Deadline)
+			curDLine, _ := TimeParser(st[j].Deadline)
+			nextDLine, _ := TimeParser(st[j+1].Deadline)
 
 			if curDLine.After(nextDLine) {
 				st[j], st[j+1] = st[j+1], st[j]
@@ -166,7 +176,7 @@ func (sl *SlTasks) ShowOverdue() string {
 	now := time.Now()
 	var str string
 	for _, val := range *sl {
-		dLine, _ := timeParser(val.Deadline)
+		dLine, _ := TimeParser(val.Deadline)
 		if val.Complete == false && dLine.Before(now) {
 			str += Show(val)
 		}

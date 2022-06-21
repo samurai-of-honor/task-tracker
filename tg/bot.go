@@ -45,10 +45,7 @@ func GetText(updates tg.UpdatesChannel) string {
 	return UnknownCommand
 }
 
-func main() {
-	Auth()
-	go NotificationOn(true)
-
+func UpdateHandler() {
 	var curr tm.Task
 
 	u := tg.NewUpdate(0)
@@ -156,6 +153,8 @@ func main() {
 			Send(msg)
 			title := GetText(updates)
 			sl.Change(curr.Title, title, curr.Description, curr.Deadline)
+			curr = sl.Find(title)
+
 			msg.Text = ChangeTitle + TaskChanged
 			msg.ReplyMarkup = changeKeyboard
 		case ChangeDesc:
@@ -197,4 +196,10 @@ func main() {
 		sl.Save(TaskFile(update.Message.Chat.ID))
 		Send(msg)
 	}
+}
+
+func main() {
+	Auth()
+	go NotificationOn(true)
+	UpdateHandler()
 }

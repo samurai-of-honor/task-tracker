@@ -7,6 +7,3 @@ Application for task tracking
 
 ### Telegram bot version [code](https://github.com/samurai-of-honor/task-tracker/tree/tg-bot)
 + [v1.0-tg](https://github.com/samurai-of-honor/task-tracker/releases/tag/v1.0-tg)
-
-### WEB version [code](https://github.com/samurai-of-honor/task-tracker/tree/web)  
-In progress...
